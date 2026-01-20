@@ -54,9 +54,13 @@ module AP
         stray_edges = 0
         back_faces = 0
         max_depth = 0
+        mirrored_instances = 0
 
         traverse_entities(model.entities, 0) do |entity, depth|
           max_depth = depth if depth > max_depth
+          if entity.respond_to?(:transformation)
+            mirrored_instances += 1 if negative_transform?(entity.transformation)
+          end
           case entity
           when Sketchup::Face
             faces += 1
@@ -85,8 +89,18 @@ module AP
           tags: model.layers.size,
           stray_edges: stray_edges,
           back_faces: back_faces,
+          mirrored_instances: mirrored_instances,
           max_depth: max_depth
         }
+      end
+
+      def negative_transform?(transformation)
+        xaxis = transformation.xaxis
+        yaxis = transformation.yaxis
+        zaxis = transformation.zaxis
+        (xaxis * yaxis).dot(zaxis) < 0
+      rescue StandardError
+        false
       end
 
       def traverse_entities(entities, depth, &block)
@@ -107,6 +121,9 @@ module AP
         warnings << "Stray edges: #{stats[:stray_edges]}" if stats[:stray_edges] > 0
         warnings << "Back-face materials: #{stats[:back_faces]}" if stats[:back_faces] > 0
         warnings << "Unused definitions: #{stats[:unused_definitions]}" if stats[:unused_definitions] > 0
+        if stats[:mirrored_instances] > 0
+          warnings << "Mirrored instances (negative scale): #{stats[:mirrored_instances]}"
+        end
         warnings << "Deep nesting depth: #{stats[:max_depth]}" if stats[:max_depth] >= 6
         warnings
       end
