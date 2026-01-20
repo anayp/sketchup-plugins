@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <!-- Prefer local copy of Math.js; fallback to CDN if not found -->
+  <script src="math.min.js" onerror="const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/mathjs/10.6.4/math.min.js';document.head.appendChild(s);"></script>
+  <style>
+    body { font-family: sans-serif; margin: 8px; }
+    table { border: 1px solid black; margin-left: auto; margin-right: auto; }
+    input[type="button"] { width: 100%; padding: 15px 30px; background-color: #2c8f2c; color: #fff; font-size: 20px; font-weight: bold; border: none; border-radius: 4px; }
+    input[type="text"] { padding: 15px 20px; font-size: 22px; font-weight: bold; border: 2px solid #000; border-radius: 4px; width: 100%; box-sizing: border-box; }
+  </style>
+</head>
+
+<body>
+  <table id="calcu">
+    <tr>
+      <td colspan="3"><input type="text" id="result" /></td>
+      <td><input type="button" value="c" onclick="clr()" /></td>
+    </tr>
+    <tr>
+      <td><input type="button" value="1" onclick="dis('1')" /></td>
+      <td><input type="button" value="2" onclick="dis('2')" /></td>
+      <td><input type="button" value="3" onclick="dis('3')" /></td>
+      <td><input type="button" value="/" onclick="dis('/')" /></td>
+    </tr>
+    <tr>
+      <td><input type="button" value="4" onclick="dis('4')" /></td>
+      <td><input type="button" value="5" onclick="dis('5')" /></td>
+      <td><input type="button" value="6" onclick="dis('6')" /></td>
+      <td><input type="button" value="*" onclick="dis('*')" /></td>
+    </tr>
+    <tr>
+      <td><input type="button" value="7" onclick="dis('7')" /></td>
+      <td><input type="button" value="8" onclick="dis('8')" /></td>
+      <td><input type="button" value="9" onclick="dis('9')" /></td>
+      <td><input type="button" value="-" onclick="dis('-')" /></td>
+    </tr>
+    <tr>
+      <td><input type="button" value="0" onclick="dis('0')" /></td>
+      <td><input type="button" value="." onclick="dis('.')" /></td>
+      <td><input type="button" value="=" onclick="solve()" /></td>
+      <td><input type="button" value="+" onclick="dis('+')" /></td>
+    </tr>
+  </table>
+
+  <script>
+    function dis(val) { document.getElementById('result').value += val; }
+    function clr() { document.getElementById('result').value = ''; }
+    function solve() {
+      let expression = document.getElementById('result').value;
+      try {
+        let y = math.evaluate(expression);
+        document.getElementById('result').value = y;
+      } catch (e) {
+        alert('Invalid expression');
+      }
+    }
+    document.getElementById('calcu').addEventListener('keyup', function (event) {
+      if (event.key === 'Enter') { solve(); }
+    });
+  </script>
+</body>
+
+</html>

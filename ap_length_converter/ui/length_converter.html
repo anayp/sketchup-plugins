@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Length Converter</title>
+  <link href="https://www.w3schools.com/w3css/4/w3.css" rel="stylesheet" />
+  <style>
+    body { font-family: Arial, sans-serif; padding: 8px; }
+  </style>
+  <script>
+    function lengthConverter(id, val) {
+      val = parseFloat(val);
+      if (isNaN(val)) return;
+
+      let feet = 0, meters = 0, inches = 0, cm = 0, yards = 0, km = 0, miles = 0;
+      switch (id) {
+        case 'inputFeet':
+          feet = val;
+          meters = val / 3.2808;
+          inches = val * 12;
+          cm = val / 0.032808;
+          yards = val * 0.33333;
+          km = val / 3280.8;
+          miles = val * 0.00018939;
+          break;
+        case 'inputMeters':
+          meters = val;
+          feet = val * 3.2808;
+          inches = val * 39.37;
+          cm = val * 100;
+          yards = val * 1.0936;
+          km = val / 1000;
+          miles = val * 0.00062137;
+          break;
+        case 'inputInches':
+          inches = val;
+          meters = val / 39.37;
+          feet = val / 12;
+          cm = val / 0.39370;
+          yards = val * 0.027778;
+          km = val / 39370;
+          miles = val * 0.000015783;
+          break;
+        case 'inputcm':
+          cm = val;
+          meters = val / 100;
+          feet = val * 0.032808;
+          inches = val * 0.39370;
+          yards = val * 0.010936;
+          km = val / 100000;
+          miles = val * 0.0000062137;
+          break;
+        case 'inputYards':
+          yards = val;
+          meters = val / 1.0936;
+          feet = val * 3;
+          inches = val * 36;
+          cm = val / 0.010936;
+          km = val / 1093.6;
+          miles = val * 0.00056818;
+          break;
+        case 'inputKilometers':
+          km = val;
+          meters = val * 1000;
+          feet = val * 3280.8;
+          inches = val * 39370;
+          cm = val * 100000;
+          yards = val * 1093.6;
+          miles = val * 0.62137;
+          break;
+        case 'inputMiles':
+          miles = val;
+          meters = val / 0.00062137;
+          feet = val * 5280;
+          inches = val * 63360;
+          cm = val / 0.0000062137;
+          yards = val * 1760;
+          km = val / 0.62137;
+          break;
+      }
+      document.getElementById('inputFeet').value = feet.toFixed(4);
+      document.getElementById('inputMeters').value = meters.toFixed(4);
+      document.getElementById('inputInches').value = inches.toFixed(4);
+      document.getElementById('inputcm').value = cm.toFixed(4);
+      document.getElementById('inputYards').value = yards.toFixed(4);
+      document.getElementById('inputKilometers').value = km.toFixed(6);
+      document.getElementById('inputMiles').value = miles.toFixed(6);
+    }
+  </script>
+  <script>
+    // Toggle between length and area mode and update labels
+    function updateMode() {
+      const isArea = document.getElementById('toggleArea').checked;
+      document.querySelectorAll('.unit-label').forEach(function (el) {
+        const base = el.getAttribute('data-base');
+        el.innerHTML = isArea ? base + '<sup>2</sup>' : base;
+      });
+      // clear existing values when switching mode
+      document.querySelectorAll('input[type="number"]').forEach(el => el.value = '');
+    }
+
+    // Enhanced converter supporting area (square) values when toggle is on
+    function lengthConverter(id, val) {
+      val = parseFloat(val);
+      if (isNaN(val)) return;
+
+      const isArea = document.getElementById('toggleArea').checked;
+      const factors = {
+        inputFeet: 0.3048,
+        inputMeters: 1,
+        inputInches: 0.0254,
+        inputcm: 0.01,
+        inputYards: 0.9144,
+        inputKilometers: 1000,
+        inputMiles: 1609.344
+      };
+
+      const baseFactor = factors[id];
+      if (!baseFactor) return;
+
+      const base = isArea ? val * baseFactor * baseFactor : val * baseFactor;
+
+      Object.keys(factors).forEach(function (key) {
+        const factor = factors[key];
+        const out = isArea ? base / (factor * factor) : base / factor;
+        const precision = isArea ? 6 : 4;
+        document.getElementById(key).value = out.toFixed(precision);
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', updateMode);
+  </script>
+</head>
+<body>
+  <div style="margin-bottom:8px;"><label><input type="checkbox" id="toggleArea" onchange="updateMode()"> Area</label></div>
+  <div class="w3-row-padding" style="margin:0 -16px">
+    <p style="margin-left:8px;margin-bottom:4px;">Type a value in any of the fields to convert between length measurements:</p>
+    <div class="w3-half w3-margin-top">
+      <label class="unit-label" data-base="Feet">Feet</label>
+      <input id="inputFeet" class="w3-input w3-border" type="number" placeholder="Feet" onchange="lengthConverter(this.id,this.value)">
+    </div>
+    <div class="w3-half w3-margin-top">
+      <label class="unit-label" data-base="Meters">Meters</label>
+      <input id="inputMeters" class="w3-input w3-border" type="number" placeholder="Meters" onchange="lengthConverter(this.id,this.value)">
+    </div>
+    <div class="w3-half w3-margin-top">
+      <label class="unit-label" data-base="Inches">Inches</label>
+      <input id="inputInches" class="w3-input w3-border" type="number" placeholder="Inches" onchange="lengthConverter(this.id,this.value)">
+    </div>
+    <div class="w3-half w3-margin-top">
+      <label class="unit-label" data-base="Centimeters">Centimeters</label>
+      <input id="inputcm" class="w3-input w3-border" type="number" placeholder="cm" onchange="lengthConverter(this.id,this.value)">
+    </div>
+    <div class="w3-half w3-margin-top">
+      <label class="unit-label" data-base="Yards">Yards</label>
+      <input id="inputYards" class="w3-input w3-border" type="number" placeholder="Yards" onchange="lengthConverter(this.id,this.value)">
+    </div>
+    <div class="w3-half w3-margin-top">
+      <label class="unit-label" data-base="Kilometers">Kilometers</label>
+      <input id="inputKilometers" class="w3-input w3-border" type="number" placeholder="Kilometers" onchange="lengthConverter(this.id,this.value)">
+    </div>
+    <div class="w3-half w3-margin-top">
+      <label class="unit-label" data-base="Miles">Miles</label>
+      <input id="inputMiles" class="w3-input w3-border" type="number" placeholder="Miles" onchange="lengthConverter(this.id,this.value)">
+    </div>
+  </div>
+</body>
+</html>
