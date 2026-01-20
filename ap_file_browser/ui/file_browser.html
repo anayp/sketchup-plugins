@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AP File Browser</title>
+  <style>
+    :root {
+      --bg: #f3f1ea;
+      --panel: #fcfbf8;
+      --ink: #1f2a30;
+      --muted: #5e6b75;
+      --accent: #0f7e7e;
+      --accent-strong: #0a5a5a;
+      --border: #d6d2c8;
+      --row: #ffffff;
+      --row-hover: #f2f7f7;
+      --row-active: #d9eceb;
+      --shadow: 0 18px 40px rgba(20, 30, 35, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Fira Sans", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: radial-gradient(circle at top left, #f9f6f0, var(--bg));
+    }
+
+    .app {
+      height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    header {
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .path-bar {
+      display: grid;
+      grid-template-columns: auto auto auto 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .path-bar input {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 13px;
+      background: #fff;
+    }
+
+    .search-bar {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .search-bar input {
+      flex: 1;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 13px;
+      background: #fff;
+    }
+
+    button {
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 12px;
+      letter-spacing: 0.02em;
+    }
+
+    button.secondary {
+      background: #e5eceb;
+      color: var(--ink);
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .content {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      height: 100%;
+    }
+
+    aside {
+      border-right: 1px solid var(--border);
+      padding: 18px 14px;
+      background: var(--panel);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+
+    #favoritesList {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 320px;
+      overflow: auto;
+    }
+
+    #favoritesList li {
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #favoritesList li span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+
+    #favoritesList li button {
+      padding: 4px 8px;
+      font-size: 10px;
+      background: #d86b5e;
+    }
+
+    main {
+      padding: 16px 18px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    #status {
+      font-size: 12px;
+      color: var(--muted);
+      min-height: 18px;
+    }
+
+    #status.error {
+      color: #b3332f;
+    }
+
+    .list-header,
+    .row {
+      display: grid;
+      grid-template-columns: 1.6fr 0.5fr 0.4fr 0.6fr;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+
+    .list-header {
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      font-size: 10px;
+    }
+
+    #list {
+      flex: 1;
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .row {
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      background: var(--row);
+      animation: fadeIn 0.25s ease-in;
+    }
+
+    .row:hover {
+      background: var(--row-hover);
+    }
+
+    .row.active {
+      background: var(--row-active);
+      color: var(--accent-strong);
+      font-weight: 600;
+    }
+
+    .row .name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .footer .actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .pill {
+      padding: 6px 12px;
+      background: #eff3f2;
+      border-radius: 999px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(3px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="path-bar">
+        <button id="upBtn" class="secondary">Up</button>
+        <button id="homeBtn" class="secondary">Home</button>
+        <button id="refreshBtn" class="secondary">Refresh</button>
+        <input id="pathInput" type="text" spellcheck="false">
+        <button id="goBtn">Go</button>
+      </div>
+      <div class="search-bar">
+        <input id="searchInput" type="text" placeholder="Search files or folders">
+      </div>
+    </header>
+
+    <div class="content">
+      <aside>
+        <div class="section-title">Favorites</div>
+        <ul id="favoritesList"></ul>
+        <button id="addFavoriteBtn" class="secondary">Add Current Folder</button>
+      </aside>
+
+      <main>
+        <div id="status">Ready.</div>
+        <div class="list-header">
+          <div>Name</div>
+          <div>Type</div>
+          <div>Size</div>
+          <div>Modified</div>
+        </div>
+        <div id="list"></div>
+        <div class="footer">
+          <div class="pill" id="countPill">0 items</div>
+          <div class="actions">
+            <button id="openModelBtn" class="secondary" disabled>Open Model</button>
+            <button id="importBtn" disabled>Import</button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      path: '',
+      entries: [],
+      favorites: [],
+      home: ''
+    };
+
+    let selected = null;
+
+    const pathInput = document.getElementById('pathInput');
+    const searchInput = document.getElementById('searchInput');
+    const listEl = document.getElementById('list');
+    const favoritesList = document.getElementById('favoritesList');
+    const statusEl = document.getElementById('status');
+    const countPill = document.getElementById('countPill');
+    const importBtn = document.getElementById('importBtn');
+    const openModelBtn = document.getElementById('openModelBtn');
+
+    const FileBrowser = {
+      setState(payload) {
+        if (payload.path) state.path = payload.path;
+        if (payload.entries) state.entries = payload.entries;
+        if (payload.favorites) state.favorites = payload.favorites;
+        if (payload.home) state.home = payload.home;
+        render();
+      },
+      receiveList(payload) {
+        state.path = payload.path || state.path;
+        state.entries = payload.entries || [];
+        if (payload.favorites) state.favorites = payload.favorites;
+        selected = null;
+        render();
+        notify('Loaded ' + state.entries.length + ' items.');
+      },
+      showError(message) {
+        statusEl.textContent = message;
+        statusEl.classList.add('error');
+      },
+      notify(message) {
+        notify(message);
+      }
+    };
+
+    window.FileBrowser = FileBrowser;
+
+    function notify(message) {
+      statusEl.textContent = message;
+      statusEl.classList.remove('error');
+    }
+
+    function formatSize(bytes) {
+      if (bytes === null || bytes === undefined) return '-';
+      if (bytes < 1024) return bytes + ' B';
+      const units = ['KB', 'MB', 'GB', 'TB'];
+      let size = bytes / 1024;
+      let unitIndex = 0;
+      while (size >= 1024 && unitIndex < units.length - 1) {
+        size /= 1024;
+        unitIndex++;
+      }
+      return size.toFixed(1) + ' ' + units[unitIndex];
+    }
+
+    function formatDate(epoch) {
+      if (!epoch) return '-';
+      const date = new Date(epoch * 1000);
+      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    }
+
+    function renderFavorites() {
+      favoritesList.innerHTML = '';
+      if (!state.favorites.length) {
+        const li = document.createElement('li');
+        li.innerHTML = '<span>No favorites yet.</span>';
+        favoritesList.appendChild(li);
+        return;
+      }
+
+      state.favorites.forEach((path) => {
+        const li = document.createElement('li');
+        const span = document.createElement('span');
+        span.textContent = path;
+        span.title = path;
+        span.addEventListener('click', () => requestList(path));
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = 'Remove';
+        removeBtn.addEventListener('click', (event) => {
+          event.stopPropagation();
+          window.sketchup.remove_favorite(path);
+        });
+        li.appendChild(span);
+        li.appendChild(removeBtn);
+        favoritesList.appendChild(li);
+      });
+    }
+
+    function renderList() {
+      listEl.innerHTML = '';
+      const query = searchInput.value.trim().toLowerCase();
+      const filtered = state.entries.filter((entry) => {
+        if (!query) return true;
+        return entry.name.toLowerCase().includes(query);
+      });
+
+      filtered.forEach((entry) => {
+        const row = document.createElement('div');
+        row.className = 'row';
+        if (selected && selected.path === entry.path) row.classList.add('active');
+
+        row.innerHTML = `
+          <div class="name">${entry.type === 'dir' ? '??' : '??'} ${entry.name}</div>
+          <div>${entry.type}</div>
+          <div>${entry.type === 'dir' ? '-' : formatSize(entry.size)}</div>
+          <div>${formatDate(entry.mtime)}</div>
+        `;
+
+        row.addEventListener('click', () => {
+          selected = entry;
+          renderList();
+          updateActions();
+        });
+
+        row.addEventListener('dblclick', () => {
+          if (entry.type === 'dir') {
+            requestList(entry.path);
+          } else {
+            window.sketchup.import_file(entry.path);
+          }
+        });
+
+        listEl.appendChild(row);
+      });
+
+      countPill.textContent = filtered.length + ' items';
+      updateActions();
+    }
+
+    function updateActions() {
+      importBtn.disabled = !selected || selected.type !== 'file';
+      const isModel = selected && selected.type === 'file' && selected.path.toLowerCase().endsWith('.skp');
+      openModelBtn.disabled = !isModel;
+    }
+
+    function render() {
+      pathInput.value = state.path;
+      renderFavorites();
+      renderList();
+      updateActions();
+    }
+
+    function requestList(path) {
+      if (!window.sketchup || !window.sketchup.list_dir) return;
+      window.sketchup.list_dir(path);
+    }
+
+    function parentPath(path) {
+      if (!path) return path;
+      const cleaned = path.replace(/[\\/]+$/, '');
+      const parts = cleaned.split(/[\\/]/);
+      if (parts.length <= 1) return path;
+      parts.pop();
+      let parent = parts.join('\\');
+      if (/^[A-Za-z]:$/.test(parent)) {
+        parent += '\\';
+      }
+      return parent || path;
+    }
+
+    document.getElementById('upBtn').addEventListener('click', () => {
+      requestList(parentPath(state.path));
+    });
+
+    document.getElementById('homeBtn').addEventListener('click', () => {
+      if (state.home) requestList(state.home);
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      requestList(state.path);
+    });
+
+    document.getElementById('goBtn').addEventListener('click', () => {
+      requestList(pathInput.value);
+    });
+
+    pathInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') requestList(pathInput.value);
+    });
+
+    searchInput.addEventListener('input', () => {
+      renderList();
+    });
+
+    document.getElementById('addFavoriteBtn').addEventListener('click', () => {
+      window.sketchup.add_favorite(state.path);
+    });
+
+    importBtn.addEventListener('click', () => {
+      if (selected) window.sketchup.import_file(selected.path);
+    });
+
+    openModelBtn.addEventListener('click', () => {
+      if (selected) window.sketchup.open_model(selected.path);
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.sketchup && window.sketchup.ready) {
+        window.sketchup.ready();
+      }
+    });
+  </script>
+</body>
+</html>

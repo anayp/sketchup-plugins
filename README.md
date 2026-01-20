@@ -17,6 +17,7 @@ Restart SketchUp to load the plugins. For plugins with a matching folder (for ex
 - `ap_select_groups_current_level` - Selects all groups in the current editing context.
 - `ap_crowd_scatter` - Scatters component instances across a face with spacing, jitter, and preview.
 - `ap_drop_to_mesh` - Drops selected groups or components onto the nearest mesh surface below.
+- `ap_file_browser` - Browses folders and imports files without leaving SketchUp.
 - `simple_wall_maker` - Creates walls along selected edges with set thickness and height.
 - `RoadBuilder` - Builds a flat road surface from selected centerline edges with width and thickness options.
 - `GrillMaker` - Turns selected edges into thin cylindrical grill bars.
