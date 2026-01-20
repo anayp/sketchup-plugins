@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AP Model Snapshot</title>
+  <style>
+    :root {
+      --bg: #f5f2ec;
+      --panel: #ffffff;
+      --ink: #1f2a30;
+      --muted: #64707a;
+      --accent: #365a6b;
+      --border: #d8d3c7;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Fira Sans", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    header {
+      padding: 14px 18px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      padding: 12px 18px;
+    }
+
+    button {
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #e5eceb;
+      color: var(--ink);
+    }
+
+    .content {
+      padding: 0 18px 18px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+    }
+
+    pre {
+      margin: 0;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    #status {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    #status.error {
+      color: #b3332f;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Model Snapshot</h1>
+  </header>
+
+  <div class="actions">
+    <button id="captureBtn">Capture Snapshot</button>
+    <button id="compareBtn" class="secondary">Compare to Snapshot</button>
+    <button id="clearBtn" class="secondary">Clear Snapshot</button>
+  </div>
+
+  <div class="content">
+    <div id="status">Ready.</div>
+    <div class="panel">
+      <strong>Snapshot</strong>
+      <pre id="snapshotView">No snapshot yet.</pre>
+    </div>
+    <div class="panel">
+      <strong>Diff</strong>
+      <pre id="diffView">Capture a snapshot, then compare.</pre>
+    </div>
+  </div>
+
+  <script>
+    const snapshotView = document.getElementById('snapshotView');
+    const diffView = document.getElementById('diffView');
+    const statusEl = document.getElementById('status');
+
+    function formatSnapshot(snapshot) {
+      if (!snapshot) return 'No snapshot yet.';
+      return JSON.stringify(snapshot, null, 2);
+    }
+
+    function notify(message) {
+      statusEl.textContent = message;
+      statusEl.classList.remove('error');
+    }
+
+    function error(message) {
+      statusEl.textContent = message;
+      statusEl.classList.add('error');
+    }
+
+    window.ModelSnapshot = {
+      setState(payload) {
+        if (payload.snapshot) {
+          snapshotView.textContent = formatSnapshot(payload.snapshot);
+        }
+      },
+      showSnapshot(snapshot) {
+        snapshotView.textContent = formatSnapshot(snapshot);
+        diffView.textContent = 'Snapshot captured.';
+        notify('Snapshot saved.');
+      },
+      showDiff(payload) {
+        diffView.textContent = JSON.stringify(payload, null, 2);
+        notify('Diff updated.');
+      },
+      showError(message) {
+        error(message);
+      },
+      clearSnapshot() {
+        snapshotView.textContent = 'No snapshot yet.';
+        diffView.textContent = 'Capture a snapshot, then compare.';
+        notify('Snapshot cleared.');
+      }
+    };
+
+    document.getElementById('captureBtn').addEventListener('click', () => {
+      window.sketchup.capture();
+    });
+
+    document.getElementById('compareBtn').addEventListener('click', () => {
+      window.sketchup.compare();
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      window.sketchup.clear();
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.sketchup && window.sketchup.ready) {
+        window.sketchup.ready();
+      }
+    });
+  </script>
+</body>
+</html>

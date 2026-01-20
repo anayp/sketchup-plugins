@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AP Selection Sets</title>
+  <style>
+    :root {
+      --bg: #f5f3ee;
+      --panel: #ffffff;
+      --ink: #1f2a30;
+      --muted: #67727b;
+      --accent: #3a6b6b;
+      --border: #d8d3c7;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Fira Sans", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    header {
+      padding: 14px 18px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+    }
+
+    h1 { margin: 0; font-size: 18px; }
+
+    main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      padding: 18px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    input, select {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 12px;
+    }
+
+    button {
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #e5eceb;
+      color: var(--ink);
+    }
+
+    #status {
+      grid-column: span 2;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    #status.error { color: #b3332f; }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    li {
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    li button {
+      padding: 4px 8px;
+      background: #d86b5e;
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Selection Sets</h1>
+  </header>
+
+  <main>
+    <div class="panel">
+      <label>Saved Sets</label>
+      <ul id="setList"></ul>
+      <input id="setName" type="text" placeholder="New set name">
+      <button id="saveSetBtn">Save Current Selection</button>
+      <button id="applySetBtn" class="secondary">Apply Selected Set</button>
+    </div>
+
+    <div class="panel">
+      <label>Quick Filters</label>
+      <select id="tagSelect"></select>
+      <button id="tagFilterBtn" class="secondary">Select by Tag</button>
+      <select id="materialSelect"></select>
+      <button id="materialFilterBtn" class="secondary">Select by Material</button>
+      <input id="nameFilter" type="text" placeholder="Name contains...">
+      <button id="nameFilterBtn" class="secondary">Select by Name</button>
+    </div>
+
+    <div id="status">Ready.</div>
+  </main>
+
+  <script>
+    const state = { sets: {}, tags: [], materials: [] };
+    let selectedSet = null;
+
+    const setList = document.getElementById('setList');
+    const setName = document.getElementById('setName');
+    const statusEl = document.getElementById('status');
+    const tagSelect = document.getElementById('tagSelect');
+    const materialSelect = document.getElementById('materialSelect');
+
+    function notify(message) {
+      statusEl.textContent = message;
+      statusEl.classList.remove('error');
+    }
+
+    function error(message) {
+      statusEl.textContent = message;
+      statusEl.classList.add('error');
+    }
+
+    function renderSets() {
+      setList.innerHTML = '';
+      const names = Object.keys(state.sets).sort();
+      if (!names.length) {
+        const li = document.createElement('li');
+        li.textContent = 'No sets saved yet.';
+        setList.appendChild(li);
+        return;
+      }
+
+      names.forEach((name) => {
+        const li = document.createElement('li');
+        const span = document.createElement('span');
+        span.textContent = name;
+        span.style.flex = '1';
+        span.addEventListener('click', () => {
+          selectedSet = name;
+          notify('Selected set: ' + name);
+        });
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = 'Delete';
+        removeBtn.addEventListener('click', () => {
+          window.sketchup.delete_set(name);
+        });
+        li.appendChild(span);
+        li.appendChild(removeBtn);
+        setList.appendChild(li);
+      });
+    }
+
+    function renderSelect(select, items) {
+      select.innerHTML = '';
+      items.forEach((item) => {
+        const option = document.createElement('option');
+        option.value = item;
+        option.textContent = item;
+        select.appendChild(option);
+      });
+    }
+
+    window.SelectionSets = {
+      setState(payload) {
+        state.sets = payload.sets || {};
+        state.tags = payload.tags || [];
+        state.materials = payload.materials || [];
+        renderSets();
+        renderSelect(tagSelect, state.tags);
+        renderSelect(materialSelect, state.materials);
+        notify('Ready.');
+      },
+      showError(message) {
+        error(message);
+      }
+    };
+
+    document.getElementById('saveSetBtn').addEventListener('click', () => {
+      window.sketchup.save_set(setName.value);
+      setName.value = '';
+    });
+
+    document.getElementById('applySetBtn').addEventListener('click', () => {
+      if (!selectedSet) {
+        error('Select a set first.');
+        return;
+      }
+      window.sketchup.apply_set(selectedSet);
+    });
+
+    document.getElementById('tagFilterBtn').addEventListener('click', () => {
+      if (tagSelect.value) window.sketchup.filter_tag(tagSelect.value);
+    });
+
+    document.getElementById('materialFilterBtn').addEventListener('click', () => {
+      if (materialSelect.value) window.sketchup.filter_material(materialSelect.value);
+    });
+
+    document.getElementById('nameFilterBtn').addEventListener('click', () => {
+      if (nameFilter.value) window.sketchup.filter_name(nameFilter.value);
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.sketchup && window.sketchup.ready) {
+        window.sketchup.ready();
+      }
+    });
+  </script>
+</body>
+</html>

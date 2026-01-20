@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AP Overlay HUD</title>
+  <style>
+    :root {
+      --bg: #f5f2ec;
+      --panel: #ffffff;
+      --ink: #1f2a30;
+      --muted: #65727c;
+      --accent: #3f6372;
+      --border: #d8d3c7;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Fira Sans", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    header {
+      padding: 12px 14px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    h1 { margin: 0; font-size: 16px; }
+
+    button {
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    main {
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .stat {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+
+    .label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .value {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    #status {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    #status.error { color: #b3332f; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Overlay HUD</h1>
+    <button id="refreshBtn">Refresh</button>
+  </header>
+
+  <main>
+    <div id="status">Ready.</div>
+    <div class="stat"><div class="label">Model</div><div class="value" id="modelName">-</div></div>
+    <div class="stat"><div class="label">Camera</div><div class="value" id="camera">-</div></div>
+    <div class="stat"><div class="label">Selection</div><div class="value" id="selection">-</div></div>
+    <div class="stat"><div class="label">Units</div><div class="value" id="units">-</div></div>
+    <div class="stat"><div class="label">Bounds</div><div class="value" id="bounds">-</div></div>
+  </main>
+
+  <script>
+    const statusEl = document.getElementById('status');
+
+    function notify(message) {
+      statusEl.textContent = message;
+      statusEl.classList.remove('error');
+    }
+
+    function error(message) {
+      statusEl.textContent = message;
+      statusEl.classList.add('error');
+    }
+
+    window.OverlayHud = {
+      setState(payload) {
+        const stats = payload.stats || {};
+        document.getElementById('modelName').textContent = stats.model_name || '-';
+        document.getElementById('camera').textContent = stats.camera || '-';
+        document.getElementById('selection').textContent = stats.selection_count || 0;
+        document.getElementById('units').textContent = stats.units || '-';
+        document.getElementById('bounds').textContent = `${stats.bbox_x || 0} x ${stats.bbox_y || 0} x ${stats.bbox_z || 0}`;
+        notify('Updated.');
+      },
+      showError(message) {
+        error(message);
+      }
+    };
+
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      window.sketchup.refresh();
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.sketchup && window.sketchup.ready) {
+        window.sketchup.ready();
+      }
+    });
+  </script>
+</body>
+</html>

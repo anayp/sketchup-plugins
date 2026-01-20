@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AP Publish Pack</title>
+  <style>
+    :root {
+      --bg: #f5f2ec;
+      --panel: #ffffff;
+      --ink: #1f2a30;
+      --muted: #65727c;
+      --accent: #3f6372;
+      --border: #d8d3c7;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Fira Sans", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    header {
+      padding: 14px 18px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+    }
+
+    h1 { margin: 0; font-size: 18px; }
+
+    main {
+      padding: 18px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 12px;
+    }
+
+    label {
+      font-size: 12px;
+    }
+
+    .checks {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 8px;
+    }
+
+    button {
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #e5eceb;
+      color: var(--ink);
+    }
+
+    #status {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    #status.error {
+      color: #b3332f;
+    }
+
+    pre {
+      margin: 0;
+      font-size: 12px;
+      background: #f7f5f0;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Publish Pack</h1>
+  </header>
+
+  <main>
+    <div class="panel">
+      <div class="row">
+        <input id="folderInput" type="text" placeholder="Output folder">
+        <button id="browseBtn" class="secondary">Browse</button>
+      </div>
+      <div class="checks">
+        <label><input type="checkbox" id="optSkp" checked> SKP copy</label>
+        <label><input type="checkbox" id="optPng" checked> PNG preview</label>
+        <label><input type="checkbox" id="optObj"> OBJ export</label>
+        <label><input type="checkbox" id="optStl"> STL export</label>
+        <label><input type="checkbox" id="optDae"> DAE export</label>
+        <label><input type="checkbox" id="optJson" checked> JSON metadata</label>
+      </div>
+      <button id="publishBtn">Publish Pack</button>
+    </div>
+
+    <div id="status">Ready.</div>
+    <pre id="resultView">No exports yet.</pre>
+  </main>
+
+  <script>
+    const folderInput = document.getElementById('folderInput');
+    const statusEl = document.getElementById('status');
+    const resultView = document.getElementById('resultView');
+
+    function notify(message) {
+      statusEl.textContent = message;
+      statusEl.classList.remove('error');
+    }
+
+    function error(message) {
+      statusEl.textContent = message;
+      statusEl.classList.add('error');
+    }
+
+    window.PublishPack = {
+      setState(payload) {
+        if (payload.default_dir && !folderInput.value) {
+          folderInput.value = payload.default_dir;
+        }
+      },
+      setFolder(path) {
+        folderInput.value = path;
+      },
+      showResult(lines, folder) {
+        const output = lines.join('\n');
+        resultView.textContent = output + '\nOutput: ' + folder;
+        notify('Publish complete.');
+      },
+      showError(message) {
+        error(message);
+      }
+    };
+
+    document.getElementById('browseBtn').addEventListener('click', () => {
+      window.sketchup.pick_folder();
+    });
+
+    document.getElementById('publishBtn').addEventListener('click', () => {
+      const options = {
+        folder: folderInput.value,
+        skp: document.getElementById('optSkp').checked,
+        png: document.getElementById('optPng').checked,
+        obj: document.getElementById('optObj').checked,
+        stl: document.getElementById('optStl').checked,
+        dae: document.getElementById('optDae').checked,
+        json: document.getElementById('optJson').checked
+      };
+      window.sketchup.publish(options);
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.sketchup && window.sketchup.ready) {
+        window.sketchup.ready();
+      }
+    });
+  </script>
+</body>
+</html>

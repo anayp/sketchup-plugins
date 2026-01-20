@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AP Tag + Material Audit</title>
+  <style>
+    :root {
+      --bg: #f5f2ec;
+      --panel: #ffffff;
+      --ink: #1f2a30;
+      --muted: #65727c;
+      --accent: #3f6372;
+      --border: #d8d3c7;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Fira Sans", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    header {
+      padding: 14px 18px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+    }
+
+    h1 { margin: 0; font-size: 18px; }
+
+    main {
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    select {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 12px;
+    }
+
+    button {
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #e5eceb;
+      color: var(--ink);
+    }
+
+    #status {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    #status.error {
+      color: #b3332f;
+    }
+
+    pre {
+      margin: 0;
+      font-size: 12px;
+      background: #f7f5f0;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Tag + Material Audit</h1>
+  </header>
+
+  <main>
+    <div class="panel">
+      <strong>Tags</strong>
+      <div class="row">
+        <select id="tagSource"></select>
+        <select id="tagTarget"></select>
+        <button id="mergeTagsBtn">Merge</button>
+      </div>
+      <button id="mergeDupTagsBtn" class="secondary">Merge Duplicate Tags (case-insensitive)</button>
+    </div>
+
+    <div class="panel">
+      <strong>Materials</strong>
+      <div class="row">
+        <select id="matSource"></select>
+        <select id="matTarget"></select>
+        <button id="mergeMatsBtn">Merge</button>
+      </div>
+      <button id="mergeDupMatsBtn" class="secondary">Merge Duplicate Materials (case-insensitive)</button>
+    </div>
+
+    <div class="panel">
+      <strong>Duplicates</strong>
+      <pre id="dupView">No duplicates found.</pre>
+    </div>
+
+    <div id="status">Ready.</div>
+  </main>
+
+  <script>
+    const state = { tags: [], materials: [], tagDuplicates: [], materialDuplicates: [] };
+    const tagSource = document.getElementById('tagSource');
+    const tagTarget = document.getElementById('tagTarget');
+    const matSource = document.getElementById('matSource');
+    const matTarget = document.getElementById('matTarget');
+    const dupView = document.getElementById('dupView');
+    const statusEl = document.getElementById('status');
+
+    function notify(message) {
+      statusEl.textContent = message;
+      statusEl.classList.remove('error');
+    }
+
+    function error(message) {
+      statusEl.textContent = message;
+      statusEl.classList.add('error');
+    }
+
+    function renderSelect(select, items) {
+      select.innerHTML = '';
+      items.forEach((item) => {
+        const option = document.createElement('option');
+        option.value = item;
+        option.textContent = item;
+        select.appendChild(option);
+      });
+    }
+
+    function renderDuplicates() {
+      const lines = [];
+      if (state.tagDuplicates.length) {
+        lines.push('Tag duplicates:');
+        state.tagDuplicates.forEach((group) => lines.push(' - ' + group.join(', ')));
+      }
+      if (state.materialDuplicates.length) {
+        lines.push('Material duplicates:');
+        state.materialDuplicates.forEach((group) => lines.push(' - ' + group.join(', ')));
+      }
+      dupView.textContent = lines.length ? lines.join('\n') : 'No duplicates found.';
+    }
+
+    window.TagMaterialAudit = {
+      setState(payload) {
+        state.tags = payload.tags || [];
+        state.materials = payload.materials || [];
+        state.tagDuplicates = payload.tag_duplicates || [];
+        state.materialDuplicates = payload.material_duplicates || [];
+        renderSelect(tagSource, state.tags);
+        renderSelect(tagTarget, state.tags);
+        renderSelect(matSource, state.materials);
+        renderSelect(matTarget, state.materials);
+        renderDuplicates();
+        notify('Ready.');
+      },
+      showError(message) {
+        error(message);
+      }
+    };
+
+    document.getElementById('mergeTagsBtn').addEventListener('click', () => {
+      window.sketchup.merge_tags(tagSource.value, tagTarget.value);
+    });
+
+    document.getElementById('mergeMatsBtn').addEventListener('click', () => {
+      window.sketchup.merge_materials(matSource.value, matTarget.value);
+    });
+
+    document.getElementById('mergeDupTagsBtn').addEventListener('click', () => {
+      window.sketchup.merge_duplicate_tags();
+    });
+
+    document.getElementById('mergeDupMatsBtn').addEventListener('click', () => {
+      window.sketchup.merge_duplicate_materials();
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.sketchup && window.sketchup.ready) {
+        window.sketchup.ready();
+      }
+    });
+  </script>
+</body>
+</html>

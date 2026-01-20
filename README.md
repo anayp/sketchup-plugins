@@ -19,6 +19,13 @@ Restart SketchUp to load the plugins. For plugins with a matching folder (for ex
 - `ap_drop_to_mesh` - Drops selected groups or components onto the nearest mesh surface below.
 - `ap_file_browser` - Browses folders and imports files without leaving SketchUp.
 - `ap_mini_browser` - Lightweight in-SketchUp web viewer with bookmarks and home page.
+- `ap_model_snapshot` - Captures a lightweight model snapshot and compares stats over time.
+- `ap_model_health` - Dashboard of model stats with quick cleanup warnings.
+- `ap_selection_sets` - Saves selection sets and filters by tag, material, or name.
+- `ap_publish_pack` - Exports a bundle (SKP, PNG, OBJ/STL/DAE, JSON metadata).
+- `ap_tag_material_audit` - Merges duplicate tags and materials.
+- `ap_stair_builder` - Builds a straight stair run with optional posts.
+- `ap_overlay_hud` - Small HUD panel with camera, selection, units, and bounds.
 - `simple_wall_maker` - Creates walls along selected edges with set thickness and height.
 - `RoadBuilder` - Builds a flat road surface from selected centerline edges with width and thickness options.
 - `GrillMaker` - Turns selected edges into thin cylindrical grill bars.

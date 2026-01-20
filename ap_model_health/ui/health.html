@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AP Model Health</title>
+  <style>
+    :root {
+      --bg: #f5f3ee;
+      --panel: #ffffff;
+      --ink: #1f2a30;
+      --muted: #67727b;
+      --accent: #3a6b6b;
+      --border: #d8d3c7;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Fira Sans", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    header {
+      padding: 14px 18px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    button {
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .content {
+      padding: 18px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+
+    .card h3 {
+      margin: 0 0 6px;
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .card span {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    #warnings {
+      background: #fff7f5;
+      border: 1px solid #f1c7c2;
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #8f2d2a;
+      font-size: 12px;
+      min-height: 40px;
+    }
+
+    #status {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    #status.error {
+      color: #b3332f;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Model Health Dashboard</h1>
+    <button id="refreshBtn">Refresh</button>
+  </header>
+
+  <div class="content">
+    <div id="status">Ready.</div>
+    <div class="grid" id="statsGrid"></div>
+    <div>
+      <strong>Warnings</strong>
+      <div id="warnings">No warnings.</div>
+    </div>
+  </div>
+
+  <script>
+    const statsGrid = document.getElementById('statsGrid');
+    const warningsEl = document.getElementById('warnings');
+    const statusEl = document.getElementById('status');
+
+    function notify(message) {
+      statusEl.textContent = message;
+      statusEl.classList.remove('error');
+    }
+
+    function error(message) {
+      statusEl.textContent = message;
+      statusEl.classList.add('error');
+    }
+
+    function renderStats(stats) {
+      statsGrid.innerHTML = '';
+      Object.entries(stats).forEach(([key, value]) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        const label = key.replace(/_/g, ' ');
+        card.innerHTML = `<h3>${label}</h3><span>${value}</span>`;
+        statsGrid.appendChild(card);
+      });
+    }
+
+    window.ModelHealth = {
+      setState(payload) {
+        if (payload.stats) renderStats(payload.stats);
+        if (payload.warnings) {
+          warningsEl.textContent = payload.warnings.length ? payload.warnings.join(' | ') : 'No warnings.';
+        }
+        notify('Updated.');
+      },
+      showError(message) {
+        error(message);
+      }
+    };
+
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      window.sketchup.refresh();
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.sketchup && window.sketchup.ready) {
+        window.sketchup.ready();
+      }
+    });
+  </script>
+</body>
+</html>
