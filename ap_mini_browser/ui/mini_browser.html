@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AP Mini Browser</title>
+  <style>
+    :root {
+      --bg: #f6f4ee;
+      --panel: #ffffff;
+      --ink: #1f2a30;
+      --muted: #6a7680;
+      --accent: #2b5c6b;
+      --accent-strong: #1b4451;
+      --border: #d9d5ca;
+      --shadow: 0 16px 40px rgba(20, 30, 35, 0.12);
+      --control: #edf1ef;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Fira Sans", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: radial-gradient(circle at top left, #fbf8f2, var(--bg));
+    }
+
+    .app {
+      height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    header {
+      padding: 14px 18px 10px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: auto auto auto auto 1fr auto auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .toolbar input {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      font-size: 13px;
+      background: #fff;
+    }
+
+    button {
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 12px;
+      letter-spacing: 0.02em;
+    }
+
+    button.secondary {
+      background: var(--control);
+      color: var(--ink);
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .content {
+      display: grid;
+      grid-template-columns: 230px 1fr;
+      height: 100%;
+    }
+
+    aside {
+      border-right: 1px solid var(--border);
+      padding: 16px 14px;
+      background: var(--panel);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+
+    #bookmarkList {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 360px;
+      overflow: auto;
+    }
+
+    #bookmarkList li {
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #bookmarkList li span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+
+    #bookmarkList li button {
+      padding: 4px 8px;
+      font-size: 10px;
+      background: #d86b5e;
+    }
+
+    main {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    #status {
+      padding: 10px 14px;
+      font-size: 12px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      background: #f7f5f0;
+    }
+
+    #status.error {
+      color: #b3332f;
+    }
+
+    .viewer {
+      flex: 1;
+      position: relative;
+      background: #fff;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #fff;
+    }
+
+    .hint {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.4;
+      padding: 8px 10px;
+      background: #f2f5f4;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="toolbar">
+        <button id="backBtn" class="secondary">Back</button>
+        <button id="forwardBtn" class="secondary">Forward</button>
+        <button id="reloadBtn" class="secondary">Reload</button>
+        <button id="homeBtn" class="secondary">Home</button>
+        <input id="urlInput" type="text" spellcheck="false" placeholder="Enter a URL">
+        <button id="goBtn">Go</button>
+        <button id="externalBtn" class="secondary">Open External</button>
+      </div>
+    </header>
+
+    <div class="content">
+      <aside>
+        <div class="section-title">Bookmarks</div>
+        <ul id="bookmarkList"></ul>
+        <button id="addBookmarkBtn" class="secondary">Add Bookmark</button>
+        <button id="setHomeBtn" class="secondary">Set Home</button>
+        <div class="hint">Some sites block embedding. Use Open External if a page stays blank.</div>
+      </aside>
+
+      <main>
+        <div id="status">Ready.</div>
+        <div class="viewer">
+          <iframe id="viewer" src="about:blank" sandbox="allow-scripts allow-forms allow-popups allow-modals allow-downloads"></iframe>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      home: 'https://duckduckgo.com',
+      bookmarks: []
+    };
+
+    const history = [];
+    let historyIndex = -1;
+
+    const urlInput = document.getElementById('urlInput');
+    const statusEl = document.getElementById('status');
+    const viewer = document.getElementById('viewer');
+    const bookmarkList = document.getElementById('bookmarkList');
+    const backBtn = document.getElementById('backBtn');
+    const forwardBtn = document.getElementById('forwardBtn');
+
+    function normalizeUrl(url) {
+      if (!url) return null;
+      const trimmed = url.trim();
+      if (!trimmed) return null;
+      if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed)) return trimmed;
+      return 'https://' + trimmed;
+    }
+
+    function notify(message) {
+      statusEl.textContent = message;
+      statusEl.classList.remove('error');
+    }
+
+    function error(message) {
+      statusEl.textContent = message;
+      statusEl.classList.add('error');
+    }
+
+    function setViewerUrl(url, pushHistory = true) {
+      const normalized = normalizeUrl(url);
+      if (!normalized) {
+        error('Enter a valid URL.');
+        return;
+      }
+
+      if (pushHistory) {
+        history.splice(historyIndex + 1, history.length - historyIndex - 1);
+        history.push(normalized);
+        historyIndex = history.length - 1;
+      }
+
+      urlInput.value = normalized;
+      viewer.src = normalized;
+      updateNavButtons();
+      notify('Loading ' + normalized);
+    }
+
+    function updateNavButtons() {
+      backBtn.disabled = historyIndex <= 0;
+      forwardBtn.disabled = historyIndex >= history.length - 1;
+    }
+
+    function renderBookmarks() {
+      bookmarkList.innerHTML = '';
+      if (!state.bookmarks.length) {
+        const li = document.createElement('li');
+        li.innerHTML = '<span>No bookmarks yet.</span>';
+        bookmarkList.appendChild(li);
+        return;
+      }
+
+      state.bookmarks.forEach((url) => {
+        const li = document.createElement('li');
+        const span = document.createElement('span');
+        span.textContent = url;
+        span.title = url;
+        span.addEventListener('click', () => setViewerUrl(url));
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = 'Remove';
+        removeBtn.addEventListener('click', (event) => {
+          event.stopPropagation();
+          window.sketchup.remove_bookmark(url);
+        });
+        li.appendChild(span);
+        li.appendChild(removeBtn);
+        bookmarkList.appendChild(li);
+      });
+    }
+
+    const MiniBrowser = {
+      setState(payload) {
+        if (payload.home) state.home = payload.home;
+        if (payload.bookmarks) state.bookmarks = payload.bookmarks;
+        renderBookmarks();
+        if (!history.length) setViewerUrl(state.home);
+      }
+    };
+
+    window.MiniBrowser = MiniBrowser;
+
+    document.getElementById('goBtn').addEventListener('click', () => {
+      setViewerUrl(urlInput.value);
+    });
+
+    urlInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') setViewerUrl(urlInput.value);
+    });
+
+    document.getElementById('reloadBtn').addEventListener('click', () => {
+      if (historyIndex >= 0) setViewerUrl(history[historyIndex], false);
+    });
+
+    document.getElementById('homeBtn').addEventListener('click', () => {
+      setViewerUrl(state.home);
+    });
+
+    backBtn.addEventListener('click', () => {
+      if (historyIndex > 0) {
+        historyIndex -= 1;
+        setViewerUrl(history[historyIndex], false);
+      }
+    });
+
+    forwardBtn.addEventListener('click', () => {
+      if (historyIndex < history.length - 1) {
+        historyIndex += 1;
+        setViewerUrl(history[historyIndex], false);
+      }
+    });
+
+    document.getElementById('addBookmarkBtn').addEventListener('click', () => {
+      const current = normalizeUrl(urlInput.value);
+      if (!current) return;
+      window.sketchup.add_bookmark(current);
+    });
+
+    document.getElementById('setHomeBtn').addEventListener('click', () => {
+      const current = normalizeUrl(urlInput.value);
+      if (!current) return;
+      window.sketchup.set_home(current);
+      notify('Home set to ' + current);
+    });
+
+    document.getElementById('externalBtn').addEventListener('click', () => {
+      const current = normalizeUrl(urlInput.value);
+      if (!current) return;
+      window.sketchup.open_external(current);
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.sketchup && window.sketchup.ready) {
+        window.sketchup.ready();
+      }
+    });
+  </script>
+</body>
+</html>
