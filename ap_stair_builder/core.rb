@@ -22,8 +22,16 @@ module AP
         return unless input
 
         total_rise, total_run, width, steps, tread_thickness, rail_side, post_height = input
+        total_rise = total_rise.to_f
+        total_run = total_run.to_f
+        width = width.to_f
+        tread_thickness = tread_thickness.to_f
+        post_height = post_height.to_f
         steps = steps.to_i
-        return if steps <= 0
+        if steps <= 0 || total_rise <= 0 || total_run <= 0 || width <= 0 || tread_thickness <= 0
+          UI.messagebox('Enter positive values for rise, run, width, steps, and tread thickness.')
+          return
+        end
 
         step_height = total_rise.to_f / steps
         tread_depth = total_run.to_f / steps
@@ -44,7 +52,7 @@ module AP
             origin + [0, width, 0]
           ]
           face = ents.add_face(pts)
-          face.pushpull(step_height)
+          face.pushpull(tread_thickness)
         end
 
         add_posts(ents, tread_depth, step_height, steps, width, rail_side, post_height)

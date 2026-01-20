@@ -78,15 +78,16 @@ module AP
         end
 
         model = Sketchup.active_model
+        unless model.respond_to?(:find_entity_by_persistent_id)
+          execute_script("window.SelectionSets.showError('Persistent IDs are not supported in this SketchUp version.')")
+          return
+        end
+
         selection = model.selection
         selection.clear
 
         ids.each do |pid|
-          entity = if model.respond_to?(:find_entity_by_persistent_id)
-                     model.find_entity_by_persistent_id(pid)
-                   else
-                     nil
-                   end
+          entity = model.find_entity_by_persistent_id(pid)
           selection.add(entity) if entity
         end
       end

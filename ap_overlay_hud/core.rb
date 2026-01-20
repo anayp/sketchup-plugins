@@ -55,11 +55,22 @@ module AP
           model_name: model.title.to_s.empty? ? 'Untitled' : model.title,
           camera: camera.perspective? ? 'Perspective' : 'Parallel',
           selection_count: model.selection.size,
-          units: units ? units['LengthUnit'] : 'Unknown',
-          bbox_x: bbox.width,
-          bbox_y: bbox.height,
-          bbox_z: bbox.depth
+          units: unit_label(units ? units['LengthUnit'] : nil),
+          bbox_x: Sketchup.format_length(bbox.width),
+          bbox_y: Sketchup.format_length(bbox.height),
+          bbox_z: Sketchup.format_length(bbox.depth)
         }
+      end
+
+      def unit_label(value)
+        case value
+        when 0 then 'Inches'
+        when 1 then 'Feet'
+        when 2 then 'Millimeters'
+        when 3 then 'Centimeters'
+        when 4 then 'Meters'
+        else 'Unknown'
+        end
       end
 
       def execute_script(script)
