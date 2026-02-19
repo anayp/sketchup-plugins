@@ -51,8 +51,10 @@ module AP
             elsif OPERATORS.key?(token)
               while !stack.empty? && OPERATORS.key?(stack.last)
                 top = stack.last
-                break if (OPERATORS[token][:assoc] == :right && OPERATORS[token][:prec] < OPERATORS[top][:prec]) ||
-                         (OPERATORS[token][:assoc] == :left  && OPERATORS[token][:prec] <= OPERATORS[top][:prec])
+                should_pop =
+                  (OPERATORS[token][:assoc] == :right && OPERATORS[token][:prec] < OPERATORS[top][:prec]) ||
+                  (OPERATORS[token][:assoc] == :left  && OPERATORS[token][:prec] <= OPERATORS[top][:prec])
+                break unless should_pop
                 output << stack.pop
               end
               stack << token
@@ -125,72 +127,9 @@ module AP
           end
 
           @dlg ||= UI::HtmlDialog.new(dialog_title: 'Calculator', width: 350, height: 420, style: UI::HtmlDialog::STYLE_DIALOG)
-                    @dlg.set_file(html_path)
+          @dlg.set_file(html_path)
           @dlg.show
         end # show_calculator
-=begin removed duplicate HTML block
-          plugin_dir = File.dirname(__FILE__)
-          html_path = File.join(plugin_dir, 'ui', 'calculator.html')
-
-          # Ensure a local copy of Math.js is present so the calculator works offline.
-          ui_dir = File.join(plugin_dir, 'ui')
-          math_local = File.join(ui_dir, 'math.min.js')
-          unless File.exist?(math_local)
-            begin
-              require 'open-uri'
-              data = URI.open('https://cdnjs.cloudflare.com/ajax/libs/mathjs/10.6.4/math.min.js', &:read)
-              File.write(math_local, data)
-            rescue => e
-              # It's okay if the download fails – the HTML will fall back to the CDN.
-              puts "[AP::Calculator] Could not download Math.js locally: #{e.message}"
-            end
-          end
-          unless File.exist?(html_path)
-            UI.messagebox('Calculator UI not found.')
-            return
-          end
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <meta charset="utf-8">
-              <title>Calculator</title>
-              <style>
-                body { font-family: sans-serif; margin: 8px; }
-                #expr { width: 260px; }
-                #result { margin-top: 8px; font-weight: bold; }
-              </style>
-            </head>
-            <body>
-              <input type="text" id="expr" placeholder="Expression" />
-              <button onclick="sketchup.evaluate(document.getElementById('expr').value)">=</button>
-              <p id="result"></p>
-              <script>
-                function sketchupCallback(res){ document.getElementById('result').innerText = res; }
-              </script>
-            </body>
-            </html>
-          HTML
-
-          @dlg ||= UI::HtmlDialog.new(dialog_title: 'Calculator', width: 350, height: 420, style: UI::HtmlDialog::STYLE_DIALOG)
-                    @dlg.set_file(html_path)
-            begin
-              res = Evaluator.evaluate(expr.to_s)
-              @dlg.execute_script("sketchupCallback(" + res.to_s.inspect + ")")
-            rescue => e
-              UI.messagebox("Error: #{e.message}")
-            end
-          end
-          @dlg.show
-                  @dlg.show
-        end
-=end
-        # Commented out duplicate obsolete block
-        # rescue => e
-        #   UI.messagebox("Error: #{e.message}")
-        # end
-        # end
-        # @dlg.show
-        # @dlg.show
       end # module UIHelper
 
       #-------------------------------------------------------------------------

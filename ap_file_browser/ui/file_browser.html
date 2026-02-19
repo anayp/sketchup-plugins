@@ -447,21 +447,53 @@
       window.sketchup.list_dir(path);
     }
 
+    function isWindowsPath(path) {
+      return /^[A-Za-z]:[\\/]/.test(path) || path.startsWith('\\\\');
+    }
+
     function parentPath(path) {
       if (!path) return path;
       const cleaned = path.replace(/[\\/]+$/, '');
-      const parts = cleaned.split(/[\\/]/);
-      if (parts.length <= 1) return path;
-      parts.pop();
-      let parent = parts.join('\\');
-      if (/^[A-Za-z]:$/.test(parent)) {
-        parent += '\\';
+      if (!cleaned) return path;
+
+      if (isWindowsPath(cleaned)) {
+        // UNC paths: \\server\share\folder
+        if (cleaned.startsWith('\\\\')) {
+          const uncParts = cleaned.replace(/^\\\\+/, '').split(/[\\/]+/).filter(Boolean);
+          if (uncParts.length <= 2) {
+            return '\\\\' + uncParts.join('\\') + '\\';
+          }
+          return '\\\\' + uncParts.slice(0, -1).join('\\');
+        }
+
+        // Drive paths: C:\folder\subfolder
+        const drive = cleaned.slice(0, 2);
+        const rest = cleaned.slice(2).replace(/^[\\/]+/, '');
+        if (!rest) return drive + '\\';
+        const parts = rest.split(/[\\/]+/).filter(Boolean);
+        if (parts.length <= 1) return drive + '\\';
+        return drive + '\\' + parts.slice(0, -1).join('\\');
       }
-      return parent || path;
+
+      // POSIX absolute paths: /Users/name/folder
+      if (cleaned.startsWith('/')) {
+        if (cleaned === '/') return '/';
+        const parts = cleaned.split('/').filter(Boolean);
+        if (parts.length <= 1) return '/';
+        return '/' + parts.slice(0, -1).join('/');
+      }
+
+      // Relative paths fallback
+      const relativeParts = cleaned.split(/[\\/]+/).filter(Boolean);
+      if (relativeParts.length <= 1) return cleaned;
+      return relativeParts.slice(0, -1).join('/');
     }
 
     document.getElementById('upBtn').addEventListener('click', () => {
-      requestList(parentPath(state.path));
+      const parent = parentPath(state.path);
+      if (parent && parent !== state.path) {
+        requestList(parent);
+      }
     });
 
     document.getElementById('homeBtn').addEventListener('click', () => {

@@ -37,7 +37,7 @@ module APDropToMesh
     if skipped.any?
       UI.messagebox("Dropped #{dropped.size} items. Skipped #{skipped.size} (no mesh hit beneath them).")
     else
-      model.status_text = "Dropped #{dropped.size} items onto mesh."
+      set_status("Dropped #{dropped.size} items onto mesh.")
     end
   rescue => e
     restore_hidden_state(hidden_state)
@@ -104,6 +104,18 @@ module APDropToMesh
   def bounding_corners_in_world(entity, path_tr)
     bb = entity.bounds
     (0..7).map { |i| bb.corner(i).transform(path_tr) }
+  end
+
+  def set_status(message)
+    if Sketchup.respond_to?(:set_status_text)
+      begin
+        Sketchup.set_status_text(message, SB_PROMPT)
+      rescue StandardError
+        Sketchup.set_status_text(message)
+      end
+    elsif Sketchup.respond_to?(:status_text=)
+      Sketchup.status_text = message
+    end
   end
 
   unless file_loaded?(__FILE__)

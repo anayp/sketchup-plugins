@@ -1,0 +1,37 @@
+# simple_wall_maker Spec
+
+## Metadata
+- Plugin: simple_wall_maker
+- Owner: TBD
+- Priority: P2
+- Sprint Target: Sprint 3
+- Status: Chain/junction correctness tests
+
+## 1. Purpose
+- TBD
+
+## 2. Supported Workflows
+- TBD
+
+## 3. Inputs and Options
+- TBD
+
+## 4. Output and Side Effects
+- TBD
+
+## 5. Error Cases and Messages
+- TBD
+
+## 6. Cross-Platform Rules (Windows + macOS)
+- TBD
+
+## 7. Acceptance Tests
+- [ ] AT-01 TBD
+- [ ] AT-02 TBD
+- [ ] AT-03 TBD
+
+## 8. Non-Goals and Known Limits
+- TBD
+
+## 9. Change Log
+- 2026-02-17: Initial spec scaffold.
