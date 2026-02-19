@@ -81,11 +81,63 @@ module UI
   def self.openURL(_url)
     true
   end
+
+  def self.start_timer(_seconds, _repeat = false)
+    1
+  end
+
+  def self.stop_timer(_id)
+    true
+  end
 end
 
 module Sketchup
   class << self
     attr_accessor :status_text
+  end
+
+  class Entity; end
+
+  class Face < Entity
+    attr_accessor :material, :back_material
+  end
+
+  class Edge < Entity
+    attr_accessor :faces
+
+    def initialize
+      @faces = []
+    end
+  end
+
+  class Group < Entity
+    attr_accessor :entities
+
+    def initialize(entities = [])
+      @entities = entities
+    end
+  end
+
+  class ComponentDefinition
+    attr_accessor :entities, :instances
+
+    def initialize(entities = [])
+      @entities = entities
+      @instances = []
+    end
+
+    def image?
+      false
+    end
+  end
+
+  class ComponentInstance < Entity
+    attr_accessor :definition
+
+    def initialize(definition = ComponentDefinition.new)
+      @definition = definition
+      @definition.instances << self if @definition.respond_to?(:instances)
+    end
   end
 
   def self.active_model
@@ -102,5 +154,16 @@ module Sketchup
 
   def self.format_length(value)
     value.to_s
+  end
+
+  def self.register_extension(_extension, _load)
+    true
+  end
+end
+
+class SketchupExtension
+  attr_accessor :description, :version, :creator
+
+  def initialize(_name, _loader)
   end
 end

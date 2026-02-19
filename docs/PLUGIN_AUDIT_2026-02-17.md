@@ -1,6 +1,6 @@
 # SketchUp Plugins Audit (2026-02-17)
 
-Repository: `C:\Users\anay.pantojee\Documents\sketchup-plugins`  
+Repository: `C:\Users\user\Documents\sketchup-plugins`  
 Target runtime: SketchUp 2026 on Windows + macOS
 
 ## Executive Summary
@@ -126,4 +126,3 @@ Target runtime: SketchUp 2026 on Windows + macOS
 2. Sprint 2: harden persistence and operation semantics.
 3. Sprint 3: performance and geometry correctness for heavy plugins.
 4. Sprint 4+: UX polish, docs, release hardening.
-

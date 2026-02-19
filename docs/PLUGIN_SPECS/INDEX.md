@@ -8,6 +8,7 @@ Use this index to track spec ownership, priority, and sprint target.
 | ap_file_browser | P1 | Sprint 1 | Cross-platform parent-path patch required |
 | ap_drop_to_mesh | P1 | Sprint 1 | Status API patch required |
 | ap_calculator | P1 | Sprint 1 | Dead code cleanup + evaluator tests |
+| ap_cli_bridge | P1 | Sprint 2 | Baseline localhost bridge + cached snapshot API |
 | ap_selection_sets | P2 | Sprint 2 | Stale ID feedback and resilience |
 | ap_tag_material_audit | P2 | Sprint 2 | Merge flow optimization |
 | remove_all_tags | P2 | Sprint 2 | Recursive traversal guard |
@@ -44,4 +45,3 @@ Use this structure:
 7. Acceptance tests
 8. Non-goals and known limits
 9. Change log
-
