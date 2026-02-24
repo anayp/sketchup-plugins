@@ -8,7 +8,8 @@ Use this index to track spec ownership, priority, and sprint target.
 | ap_file_browser | P1 | Sprint 1 | Cross-platform parent-path patch required |
 | ap_drop_to_mesh | P1 | Sprint 1 | Status API patch required |
 | ap_calculator | P1 | Sprint 1 | Dead code cleanup + evaluator tests |
-| ap_cli_bridge | P1 | Sprint 2 | Baseline localhost bridge + cached snapshot API |
+| ap_cli_bridge | P1 | Sprint 2 | Extended bridge: render capture, batch ops, guarded eval, history RPC |
+| ap_model_history | P1 | Sprint 2 | Baseline git-like local history (init/commit/log/checkout/diff) |
 | ap_selection_sets | P2 | Sprint 2 | Stale ID feedback and resilience |
 | ap_tag_material_audit | P2 | Sprint 2 | Merge flow optimization |
 | remove_all_tags | P2 | Sprint 2 | Recursive traversal guard |

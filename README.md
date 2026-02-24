@@ -72,6 +72,8 @@ For syntax checks:
 ```bash
 ruby -c ap_cli_bridge/core.rb
 ruby -c ap_cli_bridge.rb
+ruby -c ap_model_history/core.rb
+ruby -c ap_model_history.rb
 ruby -c tools/su_cli_bridge.rb
 ```
 
@@ -91,13 +93,54 @@ ruby tools/su_cli_bridge.rb help
 ruby tools/su_cli_bridge.rb snapshot.get
 ruby tools/su_cli_bridge.rb snapshot.refresh
 ruby tools/su_cli_bridge.rb selection.summary
+ruby tools/su_cli_bridge.rb view.capture --params "{\"width\": 1280, \"height\": 720}"
+ruby tools/su_cli_bridge.rb batch.run --params "{\"commands\":[{\"command\":\"snapshot.get\"},{\"command\":\"selection.summary\"}]}"
 ```
+
+### Optional Ruby Console Pass-Through (Advanced / Risky)
+
+`ruby.eval` is intentionally disabled by default.
+
+To enable it safely:
+
+1. Set environment variable `AP_CLI_BRIDGE_ENABLE_EVAL=1`.
+2. Set environment variable `AP_CLI_BRIDGE_TOKEN=<your-token>`.
+3. Call:
+   `ruby tools/su_cli_bridge.rb ruby.eval --params "{\"token\":\"<your-token>\",\"code\":\"Sketchup.active_model.title\"}"`
+
+Do not enable this on shared/untrusted systems.
 
 ### Stop Bridge
 
 1. In SketchUp, go to `Plugins > AP CLI Bridge > Stop Bridge`.
 2. Optional check:
    `ruby tools/su_cli_bridge.rb bridge.status`
+
+## Model History (Git-Like Workflow For Current Model)
+
+This is implemented by `ap_model_history`.
+
+### In SketchUp
+
+1. Open a saved model (`.skp`).
+2. Go to `Plugins > AP Model History > Initialize History`.
+3. Go to `Plugins > AP Model History > Commit Current Model...` and enter a message.
+4. Use `Show Latest Commits` to inspect recent commit IDs.
+
+### In CLI Through Bridge
+
+```bash
+ruby tools/su_cli_bridge.rb history.init
+ruby tools/su_cli_bridge.rb history.commit --params "{\"message\":\"baseline\"}"
+ruby tools/su_cli_bridge.rb history.log --params "{\"limit\":10}"
+ruby tools/su_cli_bridge.rb history.checkout --params "{\"commit_id\":\"<id>\",\"target_path\":\"./restored.skp\"}"
+ruby tools/su_cli_bridge.rb history.diff --params "{\"from_id\":\"<id1>\",\"to_id\":\"<id2>\"}"
+```
+
+History storage location:
+
+1. Created next to the model file under `.ap_model_history/`.
+2. Each commit stores a full `.skp` copy plus metadata in `manifest.json`.
 
 ## Plugin Inventory
 
@@ -117,6 +160,7 @@ ruby tools/su_cli_bridge.rb selection.summary
 - `ap_stair_builder` - Builds a straight stair run with optional posts.
 - `ap_overlay_hud` - Small HUD panel with camera, selection, units, and bounds.
 - `ap_cli_bridge` - Localhost JSON command bridge for CLI/agent automation with cached model snapshots.
+- `ap_model_history` - Git-like commit/log/checkout history for the active model file.
 - `simple_wall_maker` - Creates walls along selected edges with set thickness and height.
 - `RoadBuilder` - Builds a flat road surface from selected centerline edges with width and thickness options.
 - `GrillMaker` - Turns selected edges into thin cylindrical grill bars.

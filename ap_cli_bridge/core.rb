@@ -3,6 +3,8 @@ require 'json'
 require 'socket'
 require 'thread'
 require 'time'
+require 'tmpdir'
+require 'fileutils'
 
 module AP
   module Plugins
@@ -13,6 +15,9 @@ module AP
       PORT_DEFAULT = 7464
       TIMER_INTERVAL_SECONDS = 0.05
       MAX_COMMANDS_PER_TICK = 50
+      CAPTURE_DIR_NAME = 'ap_cli_bridge_captures'.freeze
+      DEFAULT_CAPTURE_WIDTH = 1920
+      DEFAULT_CAPTURE_HEIGHT = 1080
 
       class CommandError < StandardError
         attr_reader :code, :data
@@ -35,7 +40,15 @@ module AP
           'bridge.status',
           'snapshot.get',
           'snapshot.refresh',
-          'selection.summary'
+          'selection.summary',
+          'view.capture',
+          'batch.run',
+          'ruby.eval',
+          'history.init',
+          'history.commit',
+          'history.log',
+          'history.checkout',
+          'history.diff'
         ]
       end
 
@@ -321,9 +334,183 @@ module AP
           { 'snapshot' => snapshot, 'cached' => false }
         when 'selection.summary'
           { 'selection' => collect_selection_summary(Sketchup.active_model) }
+        when 'view.capture'
+          capture_view_image(params)
+        when 'batch.run'
+          run_batch_commands(params)
+        when 'ruby.eval'
+          evaluate_ruby(params)
+        when 'history.init'
+          with_model_history { |history| history.ensure_history_for_model(Sketchup.active_model) }
+        when 'history.commit'
+          with_model_history { |history| history.commit_current_model(params['message'].to_s) }
+        when 'history.log'
+          with_model_history do |history|
+            limit = positive_integer_or_nil(params['limit'])
+            history.history_log(limit: limit)
+          end
+        when 'history.checkout'
+          with_model_history do |history|
+            commit_id = params['commit_id'].to_s.strip
+            target_path = params['target_path'].to_s.strip
+            raise CommandError.new('invalid_request', 'history.checkout requires commit_id.') if commit_id.empty?
+
+            target_path = nil if target_path.empty?
+            history.checkout_commit(commit_id, target_path)
+          end
+        when 'history.diff'
+          with_model_history do |history|
+            from_id = params['from_id'].to_s.strip
+            to_id = params['to_id'].to_s.strip
+            raise CommandError.new('invalid_request', 'history.diff requires from_id and to_id.') if from_id.empty? || to_id.empty?
+
+            history.diff_commits(from_id, to_id)
+          end
         else
           raise CommandError.new('invalid_command', "Unsupported command: #{command}")
         end
+      end
+
+      def capture_view_image(params)
+        model = Sketchup.active_model
+        raise CommandError.new('model_unavailable', 'No active model available.') unless model
+        view = model.respond_to?(:active_view) ? model.active_view : nil
+        raise CommandError.new('view_unavailable', 'No active view available.') unless view
+
+        width = positive_integer(params['width'], DEFAULT_CAPTURE_WIDTH)
+        height = positive_integer(params['height'], DEFAULT_CAPTURE_HEIGHT)
+        antialias = truthy?(params.fetch('antialias', true))
+        transparent = truthy?(params.fetch('transparent', false))
+
+        requested = params['path'].to_s.strip
+        target_path = if requested.empty?
+                        capture_path_for_model(model)
+                      else
+                        File.expand_path(requested)
+                      end
+
+        ext = File.extname(target_path).downcase
+        target_path += '.png' if ext.empty?
+
+        FileUtils.mkdir_p(File.dirname(target_path))
+
+        ok = view.write_image(
+          filename: target_path,
+          width: width,
+          height: height,
+          antialias: antialias,
+          transparent: transparent
+        )
+        raise CommandError.new('capture_failed', 'SketchUp view capture failed.') unless ok
+
+        {
+          'path' => target_path,
+          'width' => width,
+          'height' => height,
+          'captured_at' => Time.now.utc.iso8601
+        }
+      end
+
+      def run_batch_commands(params)
+        commands = params['commands']
+        unless commands.is_a?(Array) && !commands.empty?
+          raise CommandError.new('invalid_request', 'batch.run requires a non-empty commands array.')
+        end
+
+        continue_on_error = truthy?(params.fetch('continue_on_error', false))
+        results = []
+
+        commands.each_with_index do |entry, index|
+          unless entry.is_a?(Hash)
+            raise CommandError.new('invalid_request', "batch.run entry at index #{index} is not an object.")
+          end
+
+          command = (entry['command'] || entry[:command]).to_s.strip
+          entry_params = normalize_params(entry['params'] || entry[:params])
+          if command.empty?
+            raise CommandError.new('invalid_request', "batch.run entry at index #{index} is missing command.")
+          end
+
+          begin
+            result = dispatch_command(command, entry_params)
+            results << {
+              'index' => index,
+              'command' => command,
+              'ok' => true,
+              'result' => result
+            }
+          rescue CommandError => e
+            failure = {
+              'index' => index,
+              'command' => command,
+              'ok' => false,
+              'error' => {
+                'code' => e.code.to_s,
+                'message' => e.message.to_s
+              }
+            }
+            failure['error']['data'] = e.data if e.data
+            results << failure
+
+            unless continue_on_error
+              raise CommandError.new(
+                'batch_failed',
+                "batch.run failed at index #{index}.",
+                { 'index' => index, 'results' => results }
+              )
+            end
+          end
+        end
+
+        {
+          'results' => results,
+          'failed_count' => results.count { |entry| entry['ok'] == false }
+        }
+      end
+
+      def evaluate_ruby(params)
+        unless ENV['AP_CLI_BRIDGE_ENABLE_EVAL'].to_s == '1'
+          raise CommandError.new('eval_disabled', 'ruby.eval is disabled. Set AP_CLI_BRIDGE_ENABLE_EVAL=1 to enable.')
+        end
+
+        required_token = ENV['AP_CLI_BRIDGE_TOKEN'].to_s
+        provided_token = params['token'].to_s
+        if !required_token.empty? && provided_token != required_token
+          raise CommandError.new('auth_failed', 'ruby.eval token mismatch.')
+        end
+
+        code = params['code'].to_s
+        raise CommandError.new('invalid_request', 'ruby.eval requires code.') if code.strip.empty?
+
+        started = Time.now
+        value = TOPLEVEL_BINDING.eval(code)
+        elapsed_ms = ((Time.now - started) * 1000.0).round(2)
+
+        {
+          'class' => value.class.to_s,
+          'inspected' => truncate_string(value.inspect, 4000),
+          'elapsed_ms' => elapsed_ms
+        }
+      rescue SyntaxError => e
+        raise CommandError.new('eval_syntax_error', e.message)
+      end
+
+      def with_model_history
+        begin
+          require_relative '../ap_model_history/core'
+        rescue LoadError => e
+          raise CommandError.new('history_unavailable', "Model history plugin is unavailable: #{e.message}")
+        end
+
+        history = AP::Plugins.const_defined?(:ModelHistory) ? AP::Plugins::ModelHistory : nil
+        raise CommandError.new('history_unavailable', 'Model history module not loaded.') unless history
+
+        yield history
+      rescue StandardError => e
+        if e.respond_to?(:code)
+          raise CommandError.new(e.code, e.message, e.respond_to?(:data) ? e.data : nil)
+        end
+        raise
       end
 
       def snapshot_for_active_model(force: false)
@@ -561,6 +748,43 @@ module AP
         model.respond_to?(:path) ? model.path.to_s : ''
       rescue StandardError
         ''
+      end
+
+      def capture_path_for_model(model)
+        capture_dir = ENV['AP_CLI_BRIDGE_CAPTURE_DIR'].to_s.strip
+        capture_dir = File.join(Dir.tmpdir, CAPTURE_DIR_NAME) if capture_dir.empty?
+        FileUtils.mkdir_p(capture_dir)
+
+        model_name = File.basename(model_path(model), '.*').to_s.strip
+        model_name = 'untitled' if model_name.empty?
+        stamp = Time.now.utc.strftime('%Y%m%d_%H%M%S')
+        File.join(capture_dir, "#{model_name}_#{stamp}.png")
+      end
+
+      def positive_integer(value, fallback)
+        numeric = value.to_i
+        numeric.positive? ? numeric : fallback
+      end
+
+      def positive_integer_or_nil(value)
+        return nil if value.nil?
+
+        numeric = value.to_i
+        numeric.positive? ? numeric : nil
+      end
+
+      def truthy?(value)
+        return value if value == true || value == false
+        return false if value.nil?
+
+        %w[1 true yes on].include?(value.to_s.strip.downcase)
+      end
+
+      def truncate_string(value, max_length)
+        text = value.to_s
+        return text if text.length <= max_length
+
+        "#{text[0, max_length]}...[truncated]"
       end
 
       def set_status(message)

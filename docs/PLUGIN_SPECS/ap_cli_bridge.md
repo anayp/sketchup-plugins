@@ -5,7 +5,7 @@
 - Owner: `user`
 - Priority: `P1`
 - Sprint Target: `Sprint 2`
-- Status: `baseline implemented`
+- Status: `extended command surface implemented`
 
 ## 1. Purpose
 - Expose a safe localhost command interface so external CLI/agent tools can query model state without re-implementing SketchUp internals each session.
@@ -22,7 +22,12 @@
 
 ## 3. Inputs and Options
 - User inputs:
-  - Bridge command string (`ping`, `snapshot.get`, `snapshot.refresh`, `selection.summary`, `bridge.status`).
+  - Bridge command string:
+    - Core: `help`, `ping`, `bridge.start`, `bridge.stop`, `bridge.status`
+    - Model state: `snapshot.get`, `snapshot.refresh`, `selection.summary`, `view.capture`
+    - Automation: `batch.run`
+    - Advanced: `ruby.eval` (disabled by default)
+    - History passthrough: `history.init`, `history.commit`, `history.log`, `history.checkout`, `history.diff`
   - Optional command params JSON.
 - Defaults:
   - Host: `127.0.0.1`
@@ -63,8 +68,11 @@
 - [x] AT-01 `ping` returns service identity and version.
 - [x] AT-02 `snapshot.get` returns cached result until dirty flag is set.
 - [x] AT-03 `selection.summary` reports entity-type counts consistently.
-- [ ] AT-04 Manual test in SketchUp 2026 on Windows.
-- [ ] AT-05 Manual test in SketchUp 2026 on macOS.
+- [x] AT-04 `view.capture` writes an image and returns a path.
+- [x] AT-05 `batch.run` executes multiple commands and returns per-command results.
+- [x] AT-06 `ruby.eval` blocked by default and token-gated when enabled.
+- [ ] AT-07 Manual test in SketchUp 2026 on Windows.
+- [ ] AT-08 Manual test in SketchUp 2026 on macOS.
 
 ## 8. Non-Goals and Known Limits
 - Not covered by this plugin:
@@ -72,7 +80,9 @@
   - Remote/non-localhost network exposure.
 - Current limitations:
   - Baseline protocol is newline-delimited JSON over raw TCP (no auth layer yet).
-  - Snapshot invalidation currently relies on observers plus explicit dirty paths.
+  - Snapshot invalidation relies on observers plus explicit dirty paths.
+  - `ruby.eval` is intentionally high-trust and must remain opt-in.
 
 ## 9. Change Log
 - 2026-02-19: Baseline bridge, command whitelist, queue-based main-thread execution, and unit tests added.
+- 2026-02-24: Added render capture, batch command execution, guarded eval, and model-history RPC commands.
