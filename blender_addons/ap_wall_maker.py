@@ -55,12 +55,12 @@ class AP_OT_WallMaker(bpy.types.Operator):
         obj = context.active_object
         bm = bmesh.from_edit_mesh(obj.data)
         
-        edges = [e for e in bm.edges if e.select]
+        edges = [(e.verts[0].co.copy(), e.verts[1].co.copy()) for e in bm.edges if e.select]
         if not edges:
             self.report({'WARNING'}, "No edges selected")
             return {'CANCELLED'}
-            
-        if check_branching(edges):
+        
+        if check_branching([e for e in bm.edges if e.select]):
             self.report({'WARNING'}, "Branching paths detected. Select a single contiguous path.")
             return {'CANCELLED'}
         
@@ -78,9 +78,9 @@ class AP_OT_WallMaker(bpy.types.Operator):
         
         all_faces = []
         
-        for e in edges:
-            v1 = e.verts[0].co
-            v2 = e.verts[1].co
+        for e_verts in edges:
+            v1 = e_verts[0]
+            v2 = e_verts[1]
             
             vec = v2 - v1
             vec_xy = Vector((vec.x, vec.y, 0))

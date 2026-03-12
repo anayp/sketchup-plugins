@@ -96,18 +96,26 @@ class AP_OT_RoadBuilder(bpy.types.Operator):
         obj = context.active_object
         bm = bmesh.from_edit_mesh(obj.data)
         
-        edges = [e for e in bm.edges if e.select]
-        if not edges:
+        raw_edges = [e for e in bm.edges if e.select]
+        if not raw_edges:
             self.report({'WARNING'}, "No edges selected")
             return {'CANCELLED'}
         
-        paths = get_edge_paths(edges)
+        paths = get_edge_paths(raw_edges)
         if paths is None:
             self.report({'WARNING'}, "Branching paths detected. Select a single contiguous path.")
             return {'CANCELLED'}
         if not paths:
             self.report({'WARNING'}, "Could not form continuous paths")
             return {'CANCELLED'}
+
+        # Dereference BMesh data by copying coordinates before changing mode
+        safe_paths = []
+        for p in paths:
+            safe_paths.append({
+                'verts': [v.co.copy() for v in p['verts']],
+                'closed': p['closed']
+            })
             
         bpy.ops.object.mode_set(mode='OBJECT')
         
@@ -122,7 +130,7 @@ class AP_OT_RoadBuilder(bpy.types.Operator):
         half_width = self.width / 2.0
         up = Vector((0, 0, 1))
         
-        for path in paths:
+        for path in safe_paths:
             verts = path['verts']
             closed = path['closed']
             
@@ -135,9 +143,9 @@ class AP_OT_RoadBuilder(bpy.types.Operator):
             current_distance = 0.0
             
             num_v = len(verts)
-            for i, v in enumerate(verts):
+            for i, v_co in enumerate(verts):
                 if i > 0:
-                    current_distance += (v.co - verts[i-1].co).length
+                    current_distance += (v_co - verts[i-1]).length
                 distances.append(current_distance)
                 
                 if closed:
@@ -149,9 +157,9 @@ class AP_OT_RoadBuilder(bpy.types.Operator):
                 
                 v_dir = Vector()
                 if prev_v:
-                    v_dir += (v.co - prev_v.co).normalized()
+                    v_dir += (v_co - prev_v).normalized()
                 if next_v:
-                    v_dir += (next_v.co - v.co).normalized()
+                    v_dir += (next_v - v_co).normalized()
                 
                 if v_dir.length < 1e-5:
                     v_dir = Vector((1, 0, 0))
@@ -166,8 +174,8 @@ class AP_OT_RoadBuilder(bpy.types.Operator):
                         cross = Vector((1, 0, 0)).cross(v_dir)
                 cross.normalize()
                 
-                left_points.append(v.co + cross * half_width)
-                right_points.append(v.co - cross * half_width)
+                left_points.append(v_co + cross * half_width)
+                right_points.append(v_co - cross * half_width)
             
             created_verts_left = [rbm.verts.new(p) for p in left_points]
             created_verts_right = [rbm.verts.new(p) for p in right_points]
