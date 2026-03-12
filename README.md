@@ -59,6 +59,17 @@ Notes:
 3. Confirm commands for plugins such as `Calculator`, `File Browser`, and `AP CLI Bridge` appear.
 4. Run one plugin command and confirm dialog/tool opens without errors.
 
+## Install Blender Add-ons
+
+A suite of these plugins has been ported to Blender as native Python add-ons.
+
+1. Open Blender (3.0+).
+2. Go to `Edit > Preferences > Add-ons`.
+3. Click `Install...` and navigate to the `blender_addons` folder in this repository.
+4. Select the `.py` files one by one (e.g., `ap_pipe_generator.py`) and click `Install Add-on`.
+5. Enable them by checking the box next to their names in the list.
+6. Open the 3D Viewport Sidebar (press `N`) and click the **AP Tools** tab to use them.
+
 ## Run Tests Before Deploying
 
 From the repo root:
@@ -170,3 +181,10 @@ History storage location:
 - `0.5inch radius pipes` - Extrudes 0.5-inch radius cylinders along selected edges.
 - `0.5inch radius pipes (optimized)` - Optimized 0.5-inch radius cylinder generation along selected edges.
 - `1inch radius pipes` - Extrudes 1-inch radius cylinders along selected edges.
+
+### Blender Add-ons
+- `blender_addons/ap_calculator.py` - Sidebar mathematical expression evaluator.
+- `blender_addons/ap_length_converter.py` - Sidebar unit converter (Length & Area).
+- `blender_addons/ap_pipe_generator.py` - Generates seamless merged pipes along selected mesh edges using native Curves.
+- `blender_addons/ap_road_builder.py` - Extrudes mesh edges horizontally and vertically to form flat roads with auto-generated UVs.
+- `blender_addons/ap_wall_maker.py` - Extrudes mesh edges vertically to form walls and custom mojo barricades.
